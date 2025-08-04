@@ -1,16 +1,24 @@
 import os
 import re
+import yaml
 from mutagen.easyid3 import EasyID3
 from mutagen.mp3 import MP3
 from yt_dlp import YoutubeDL
 
 DOWNLOAD_DIR = "downloads"
 
+def load_config(config_path: str = "config.yml") -> dict:
+    """Load configuration from a YAML file."""
+    if os.path.exists(config_path):
+        with open(config_path, "r") as f:
+            return yaml.safe_load(f) or {}
+    return{}
+    
 def sanitize_filename(name: str) -> str:
     """Remove invalid characters from filenames."""
     return re.sub(r'[\\/*?:"<>|]', "", name)
 
-def download_song():
+def download_song(config: dict) -> None:
     """Download a YouTube video as MP3 and set metadata."""
     video_url = input("🎥 YouTube-Link eingeben: ").strip()
     os.makedirs(DOWNLOAD_DIR, exist_ok=True)
@@ -45,18 +53,12 @@ def download_song():
     filename = f"{safe_artist} - {safe_title}.mp3"
     output_path = os.path.join(DOWNLOAD_DIR, filename)
 
-    # 2. Download mit angepasstem Dateinamen (neues Objekt)
-    ydl_opts_download = {
-        "format": "bestaudio/best",
-        "outtmpl": os.path.join(DOWNLOAD_DIR, f"{artist} - {title}.%(ext)s"),
-        "postprocessors": [{
-            "key": "FFmpegExtractAudio",
-            "preferredcodec": "mp3",
-            "preferredquality": "192",
-        }],
+    ydl_opts_download = dict(config)  # copy config
+    ydl_opts_download.update({
+        "outtmpl": output_path.replace(".mp3", ".%(ext)s"),
         "noplaylist": True,
         "quiet": True,
-    }
+    })
     try:
         with YoutubeDL(ydl_opts_download) as ydl_download:
             print(f"\n📥 Starte Download als: {filename}\n")
@@ -81,8 +83,9 @@ def update_tags(directory: str,artist: str, title: str):
         print(f"❌ Fehler bei Metadaten für '{directory}': {e}")
 
 if __name__ == "__main__":
+    config = load_config()
     while True:
-        download_song()
+        download_song(config)
         answer = input("🔄 Möchtest du noch ein Lied herunterladen? (j/n): ").strip().lower()
         if answer != "j":            
             print("👋 Programm beendet.")
