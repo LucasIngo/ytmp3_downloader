@@ -4,26 +4,31 @@ from mutagen.easyid3 import EasyID3
 from mutagen.mp3 import MP3
 from yt_dlp import YoutubeDL
 
-
 DOWNLOAD_DIR = "downloads"
 
 def sanitize_filename(name: str) -> str:
+    """Remove invalid characters from filenames."""
     return re.sub(r'[\\/*?:"<>|]', "", name)
 
 def download_song():
+    """Download a YouTube video as MP3 and set metadata."""
     video_url = input("🎥 YouTube-Link eingeben: ").strip()
     os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
-    # 1. Video-Info holen (extra Objekt)
+    # 1. Get video info
     ydl_opts_info = {
         "quiet": True,
         "skip_download": True,
         "noplaylist": True,
     }
-    with YoutubeDL(ydl_opts_info) as ydl_info:
-        info = ydl_info.extract_info(video_url, download=False)
-        original_title = info.get("title", "Unbekannter Titel")
-        original_artist = info.get("uploader", "Unbekannter Künstler")
+    try:
+        with YoutubeDL(ydl_opts_info) as ydl_info:
+            info = ydl_info.extract_info(video_url, download=False)
+            original_title = info.get("title", "Unbekannter Titel")
+            original_artist = info.get("uploader", "Unbekannter Künstler")
+    except Exception as e:
+        print(f"❌ Fehler beim Abrufen der Video-Infos: {e}")
+        return
 
     print(f"\n📋 Gefundene Informationen:")
     print(f"Titel:   {original_title}")
@@ -35,7 +40,9 @@ def download_song():
     title = new_title if new_title else original_title
     artist = new_artist if new_artist else original_artist
 
-    filename = f"{sanitize_filename(artist)} - {sanitize_filename(title)}.mp3"
+    safe_artist = sanitize_filename(artist)
+    safe_title = sanitize_filename(title)
+    filename = f"{safe_artist} - {safe_title}.mp3"
     output_path = os.path.join(DOWNLOAD_DIR, filename)
 
     # 2. Download mit angepasstem Dateinamen (neues Objekt)
@@ -48,17 +55,21 @@ def download_song():
             "preferredquality": "192",
         }],
         "noplaylist": True,
-        "quiet": False,
+        "quiet": True,
     }
-    with YoutubeDL(ydl_opts_download) as ydl_download:
-        print(f"\n📥 Starte Download als: {artist} - {title}.mp3\n")
-        ydl_download.download([video_url])
-    
+    try:
+        with YoutubeDL(ydl_opts_download) as ydl_download:
+            print(f"\n📥 Starte Download als: {filename}\n")
+            ydl_download.download([video_url])
+    except Exception as e:
+        print(f"❌ Fehler beim Download: {e}")
+        return
+
     update_tags(output_path, artist, title)
     print("✅ Download abgeschlossen.\n")
 
 def update_tags(directory: str,artist: str, title: str):
-    
+    """Set MP3 metadata tags."""
     print("== MP3 Metadaten-Schreiber läuft ==")
     try:
         audio = MP3(directory, ID3 = EasyID3)

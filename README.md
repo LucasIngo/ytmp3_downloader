@@ -7,11 +7,11 @@ Es wird hierfür ein downloads ordner erstellt, wo die songs gespeichert werden.
 
 ## 📋 Beispiel: Titel und Interpret vor dem Download anpassen
 
-### Tool starten:
-
 Das Skript liest zuerst die Video-Infos aus und zeigt dir den gefundenen Titel und Künstler an. Du kannst beide Eingaben anpassen oder einfach mit Enter übernehmen.
 Anschließend kann man ein weiteres Lied herunterladen oder alternativ beenden. Das Beenden startet ebenfalls den Metadaten-Schreiber, welcher basierend auf der
 Benennung der Datei (Interpret - Titel) diese Daten in die Metadaten einträgt.
+
+### Tool starten:
 
 ```bash
 python yt2mp3.py
