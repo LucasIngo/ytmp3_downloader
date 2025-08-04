@@ -1,6 +1,7 @@
 # 🎵 ytmp3-downloader (Minimal)
 
 Ein einfaches Python-Skript, das YouTube-Videos als MP3 herunterlädt und dir vor dem Download erlaubt, Titel und Interpret anzupassen.
+Es wird hierfür ein downloads ordner erstellt, wo die songs gespeichert werden.
 
 ---
 
@@ -8,13 +9,13 @@ Ein einfaches Python-Skript, das YouTube-Videos als MP3 herunterlädt und dir vo
 
 ### Tool starten:
 
-```bash
-python yt2mp3.py
-```
-
 Das Skript liest zuerst die Video-Infos aus und zeigt dir den gefundenen Titel und Künstler an. Du kannst beide Eingaben anpassen oder einfach mit Enter übernehmen.
 Anschließend kann man ein weiteres Lied herunterladen oder alternativ beenden. Das Beenden startet ebenfalls den Metadaten-Schreiber, welcher basierend auf der
 Benennung der Datei (Interpret - Titel) diese Daten in die Metadaten einträgt.
+
+```bash
+python yt2mp3.py
+```
 
 ### Beispielausgabe im Terminal:
 

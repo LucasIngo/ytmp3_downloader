@@ -4,10 +4,15 @@ from mutagen.easyid3 import EasyID3
 from mutagen.mp3 import MP3
 from yt_dlp import YoutubeDL
 
+
+DOWNLOAD_DIR = "downloads"
+
+def sanitize_filename(name: str) -> str:
+    return re.sub(r'[\\/*?:"<>|]', "", name)
+
 def download_song():
     video_url = input("🎥 YouTube-Link eingeben: ").strip()
-    output_dir = "downloads"
-    os.makedirs(output_dir, exist_ok=True)
+    os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
     # 1. Video-Info holen (extra Objekt)
     ydl_opts_info = {
@@ -30,15 +35,13 @@ def download_song():
     title = new_title if new_title else original_title
     artist = new_artist if new_artist else original_artist
 
-    safe_title = "".join(c for c in title if c.isalnum() or c in " -_").strip()
-    safe_artist = "".join(c for c in artist if c.isalnum() or c in " -_").strip()
-
-    filename_template = os.path.join(output_dir, f"{safe_artist} - {safe_title}.%(ext)s")
+    filename = f"{sanitize_filename(artist)} - {sanitize_filename(title)}.mp3"
+    output_path = os.path.join(DOWNLOAD_DIR, filename)
 
     # 2. Download mit angepasstem Dateinamen (neues Objekt)
     ydl_opts_download = {
         "format": "bestaudio/best",
-        "outtmpl": filename_template,
+        "outtmpl": os.path.join(DOWNLOAD_DIR, f"{artist} - {title}.%(ext)s"),
         "postprocessors": [{
             "key": "FFmpegExtractAudio",
             "preferredcodec": "mp3",
@@ -47,40 +50,29 @@ def download_song():
         "noplaylist": True,
         "quiet": False,
     }
-
     with YoutubeDL(ydl_opts_download) as ydl_download:
-        print(f"\n📥 Starte Download als: {safe_artist} - {safe_title}.mp3\n")
+        print(f"\n📥 Starte Download als: {artist} - {title}.mp3\n")
         ydl_download.download([video_url])
-
+    
+    update_tags(output_path, artist, title)
     print("✅ Download abgeschlossen.\n")
 
-def update_tags(directory):
+def update_tags(directory: str,artist: str, title: str):
+    
     print("== MP3 Metadaten-Schreiber läuft ==")
-    for filename in os.listdir(directory):
-        if filename.lower().endswith(".mp3"):
-            filepath = os.path.join(directory, filename)
-
-            match = re.match(r"^(.*?) - (.*?)\.mp3$", filename)
-            if not match:
-                print(f"[!] Überspringe: {filename} (kein passendes Format)")
-                continue
-
-            artist, title = match.groups()
-            try:
-                audio = MP3(filepath, ID3 = EasyID3)
-                audio['artist'] = artist.strip()
-                audio['title'] = title.strip()
-                audio.save()
-                print(f"[✓] {filename} → Artist: '{artist}', Title: '{title}'")
-            except Exception as e:
-                print(f"[!] Fehler bei '{filename}': {e}")
+    try:
+        audio = MP3(directory, ID3 = EasyID3)
+        audio['artist'] = artist.strip()
+        audio['title'] = title.strip()
+        audio.save()
+        print(f"[✓] Metadaten gesetzt für '{os.path.basename(directory)}'")
+    except Exception as e:
+        print(f"❌ Fehler bei Metadaten für '{directory}': {e}")
 
 if __name__ == "__main__":
     while True:
         download_song()
         answer = input("🔄 Möchtest du noch ein Lied herunterladen? (j/n): ").strip().lower()
-        if answer != "j":
-            
-            update_tags("downloads/")
+        if answer != "j":            
             print("👋 Programm beendet.")
             break
