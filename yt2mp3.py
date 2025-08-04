@@ -1,4 +1,7 @@
 import os
+import re
+from mutagen.easyid3 import EasyID3
+from mutagen.mp3 import MP3
 from yt_dlp import YoutubeDL
 
 def download_song():
@@ -51,10 +54,33 @@ def download_song():
 
     print("✅ Download abgeschlossen.\n")
 
+def update_tags(directory):
+    print("== MP3 Metadaten-Schreiber läuft ==")
+    for filename in os.listdir(directory):
+        if filename.lower().endswith(".mp3"):
+            filepath = os.path.join(directory, filename)
+
+            match = re.match(r"^(.*?) - (.*?)\.mp3$", filename)
+            if not match:
+                print(f"[!] Überspringe: {filename} (kein passendes Format)")
+                continue
+
+            artist, title = match.groups()
+            try:
+                audio = MP3(filepath, ID3 = EasyID3)
+                audio['artist'] = artist.strip()
+                audio['title'] = title.strip()
+                audio.save()
+                print(f"[✓] {filename} → Artist: '{artist}', Title: '{title}'")
+            except Exception as e:
+                print(f"[!] Fehler bei '{filename}': {e}")
+
 if __name__ == "__main__":
     while True:
         download_song()
         answer = input("🔄 Möchtest du noch ein Lied herunterladen? (j/n): ").strip().lower()
         if answer != "j":
+            
+            update_tags("downloads/")
             print("👋 Programm beendet.")
             break

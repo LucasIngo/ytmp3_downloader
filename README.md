@@ -13,6 +13,8 @@ python yt2mp3.py
 ```
 
 Das Skript liest zuerst die Video-Infos aus und zeigt dir den gefundenen Titel und Künstler an. Du kannst beide Eingaben anpassen oder einfach mit Enter übernehmen.
+Anschließend kann man ein weiteres Lied herunterladen oder alternativ beenden. Das Beenden startet ebenfalls den Metadaten-Schreiber, welcher basierend auf der
+Benennung der Datei (Interpret - Titel) diese Daten in die Metadaten einträgt.
 
 ### Beispielausgabe im Terminal:
 
@@ -32,6 +34,3 @@ Interpret: Rick Astley
 
  Möchtest du noch ein Lied herunterladen? (j/n):
 ```
-
-j -> wieder von vorn
-n -> Tool wird beendet
