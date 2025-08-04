@@ -1,9 +1,37 @@
 # 🎵 ytmp3-downloader (Minimal)
 
-Lädt YouTube-Videos als MP3 herunter (Audio-only), einfache Kommandozeile.
+Ein einfaches Python-Skript, das YouTube-Videos als MP3 herunterlädt und dir vor dem Download erlaubt, Titel und Interpret anzupassen.
 
-## 🧪 Beispiel
+---
+
+## 📋 Beispiel: Titel und Interpret vor dem Download anpassen
+
+### Tool starten:
 
 ```bash
-python cli.py --url "https://www.youtube.com/watch?v=abc123"
+python yt2mp3.py
 ```
+
+Das Skript liest zuerst die Video-Infos aus und zeigt dir den gefundenen Titel und Künstler an. Du kannst beide Eingaben anpassen oder einfach mit Enter übernehmen.
+
+### Beispielausgabe im Terminal:
+
+```bash
+🎥 YouTube-Link eingeben: https://www.youtube.com/watch?v=dQw4w9WgXcQ
+
+📋 Gefundene Informationen:
+Titel:   Rick Astley - Never Gonna Give You Up (Official Music Video)
+Interpret: Rick Astley
+
+❓ Neuen Titel eingeben (Enter = Rick Astley - Never Gonna Give You Up (Official Music Video)): Never Gonna Give You Up
+❓ Neuen Interpreten eingeben (Enter = Rick Astley): Rick Astley
+
+📥 Starte Download als: Rick Astley - Never Gonna Give You Up.mp3
+
+✅ Download abgeschlossen.
+
+ Möchtest du noch ein Lied herunterladen? (j/n):
+```
+
+j -> wieder von vorn
+n -> Tool wird beendet
