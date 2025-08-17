@@ -1,98 +1,82 @@
-import os
-import re
-import logging
+from flask import Flask, request, jsonify, send_from_directory, render_template
+import os, re, logging
+from yt_dlp import YoutubeDL
 from mutagen.easyid3 import EasyID3
 from mutagen.mp3 import MP3
-from yt_dlp import YoutubeDL
 
+app = Flask(__name__, static_folder="public", static_url_path="")
 DOWNLOAD_DIR = "downloads"
+os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
 def sanitize_filename(name: str) -> str:
-    """Remove invalid characters from filenames."""
     return re.sub(r'[\\/*?:"<>|]', "", name)
 
-def get_user_input(prompt: str, default: str) -> str:
-    """Prompt the user for input and return the result or a default value."""
-    user_input = input(f"{prompt} (Enter = {default}): ").strip()
-    return user_input if user_input else default
+def update_tags(file_path: str, artist: str, title: str):
+    audio = MP3(file_path, ID3=EasyID3)
+    audio['artist'] = artist.strip()
+    audio['title'] = title.strip()
+    audio.save()
 
-def download_song():
-    """Download a YouTube video as MP3 and set metadata."""
-    video_url = input("🎥 YouTube-Link eingeben: ").strip()
-    if not video_url:
-        logging.error("❌ Kein gültiger YouTube-Link eingegeben.")
-        return
-    
-    os.makedirs(DOWNLOAD_DIR, exist_ok=True)
+@app.route("/")
+def index():
+    return send_from_directory("public", "index.html")
 
-    # 1. Get video info
-    ydl_opts_info = {
-        "quiet": True,
-        "skip_download": True,
-        "noplaylist": True,
-    }
-    try:
-        with YoutubeDL(ydl_opts_info) as ydl_info:
-            info = ydl_info.extract_info(video_url, download=False)
-            original_title = info.get("title", "Unbekannter Titel")
-            original_artist = info.get("uploader", "Unbekannter Künstler")
-    except Exception as e:
-        logging.error(f"❌ Fehler beim Abrufen der Video-Infos: {e}")
-        return
+# --- Schritt 1: Vorschlag holen ---
+@app.route("/suggest", methods=["POST"])
+def suggest():
+    data = request.json
+    url = data.get("url")
+    if not url:
+        return jsonify({"success": False, "message": "Kein YouTube-Link angegeben"})
 
-    logging.info(f"\n📋 Gefundene Informationen:")
-    logging.info(f"Titel:   {original_title}")
-    logging.info(f"Interpret: {original_artist}")
+    ydl_opts = {"quiet": True, "skip_download": True, "noplaylist": True}
+    with YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(url, download=False)
+        title = info.get("title", "Unbekannter Titel")
+        artist = info.get("uploader", "Unbekannter Künstler")
 
-    title = get_user_input("❓ Neuen Titel eingeben", original_title)
-    artist = get_user_input("❓ Neuen Interpreten eingeben", original_artist)
+    return jsonify({"success": True, "title": title, "artist": artist})
 
-    safe_artist = sanitize_filename(artist)
+# --- Schritt 2: Download ---
+@app.route("/download", methods=["POST"])
+def download():
+    data = request.json
+    url = data.get("url")
+    title = data.get("title")
+    artist = data.get("artist")
+    if not url or not title or not artist:
+        return jsonify({"success": False, "message": "Fehlende Daten"})
+
     safe_title = sanitize_filename(title)
+    safe_artist = sanitize_filename(artist)
     filename = f"{safe_artist} - {safe_title}.mp3"
     output_path = os.path.join(DOWNLOAD_DIR, filename)
 
-    # 2. Download mit angepasstem Dateinamen (neues Objekt)
-    ydl_opts_download = {
+    ydl_opts = {
         "format": "bestaudio/best",
         "outtmpl": output_path.replace(".mp3", ".%(ext)s"),
-        "postprocessors": [{
-            "key": "FFmpegExtractAudio",
-            "preferredcodec": "mp3",
-            "preferredquality": "0",
-        },
-        {
-            "key": "FFmpegMetadata"
-        }],
+        "postprocessors": [
+            {"key": "FFmpegExtractAudio", "preferredcodec": "mp3", "preferredquality": "0"},
+            {"key": "FFmpegMetadata"}  # <- hier sorgt FFmpeg für ID3-Tags
+        ],
         "noplaylist": True,
         "quiet": True,
     }
-    try:
-        with YoutubeDL(ydl_opts_download) as ydl_download:
-            print(f"\n📥 Starte Download als: {artist} - {title}.mp3\n")
-            ydl_download.download([video_url])
-    except Exception as e:
-        logging.error(f"❌ Fehler beim Download: {e}")
-        return
-    update_tags(output_path, artist, title)
-    print("✅ Download abgeschlossen.\n")
 
-def update_tags(directory: str,artist: str, title: str) -> None:
-    """Update MP3 metadata tags."""
-    logging.info("== MP3 Metadaten-Schreiber läuft ==")
     try:
-        audio = MP3(directory, ID3 = EasyID3)
-        audio['artist'] = artist.strip()
-        audio['title'] = title.strip()
-        audio.save()
-        logging.info(f"[✓] Metadaten gesetzt für '{os.path.basename(directory)}'")
+        with YoutubeDL(ydl_opts) as ydl:
+            ydl.download([url])
+
+        update_tags(output_path, artist, title)
+        return jsonify({"success": True, "filename": filename, "path": DOWNLOAD_DIR})
     except Exception as e:
-        logging.error(f"❌ Fehler bei Metadaten für '{directory}': {e}")
+        logging.error(e)
+        return jsonify({"success": False, "message": str(e)})
+
+@app.route("/downloads/<path:filename>")
+def serve_file(filename):
+    return send_from_directory(DOWNLOAD_DIR, filename, as_attachment=True)
 
 if __name__ == "__main__":
-    while True:
-        download_song()
-        answer = input("🔄 Möchtest du noch ein Lied herunterladen? (j/n): ").strip().lower()
-        if answer != "j":            
-            print("👋 Programm beendet.")
-            break
+    app.run(host="0.0.0.0", port=5000)
+

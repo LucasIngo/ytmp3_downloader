@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MP3 Konverter</title>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <header>
+      <h1>MP3 Konverter</h1>
+      <p>Gib den YouTube-Link ein, um ein MP3 herunterzuladen.</p>
+    </header>
+    <main>
+      <div class="container">
+        <form id="form" autocomplete="off">
+          <div class="form-row">
+            <label for="url" class="label">YouTube-Link:</label>
+            <input
+              type="url"
+              id="url"
+              name="url"
+              placeholder="YouTube-Link"
+              required
+              pattern="https?://(www\.)?(youtube\.com|youtu\.be)/.+"
+              oninput="resizeUrlInput(this)"
+            />
+          </div>
+          <div id="meta-fields" style="display: none">
+            <div class="form-row">
+              <label for="title" class="label">Titel:</label>
+              <input
+                type="text"
+                id="title"
+                name="title"
+                placeholder="Titel (optional)"
+              />
+            </div>
+            <div class="form-row">
+              <label for="artist" class="label">Interpret:</label>
+              <input
+                type="text"
+                id="artist"
+                name="artist"
+                placeholder="Interpret (optional)"
+              />
+            </div>
+          </div>
+          <div class="form-row" style="justify-content: center">
+            <button id="suggest" type="button">Vorschlag holen</button>
+            <button id="download" type="button" disabled>
+              Download starten
+            </button>
+          </div>
+        </form>
+      </div>
+      <div class="container">
+        <div id="status-bar" class="status-bar">
+          <span id="status">No Song loaded, convert a link first!</span>
+          <img
+            id="spinner"
+            src="https://upload.wikimedia.org/wikipedia/commons/d/de/Ajax-loader.gif"
+            alt="Lädt..."
+            width="24"
+            height="24"
+            style="display: none; vertical-align: middle; margin-left: 10px"
+          />
+        </div>
+      </div>
+    </main>
+    <footer>
+      <p style="text-align: center; color: #888; margin: 24px 0 0 0">
+        &copy; 2025 MP3 Konverter
+      </p>
+    </footer>
+    <script src="js/main.js"></script>
+  </body>
+</html>
