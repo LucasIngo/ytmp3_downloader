@@ -1,37 +1,61 @@
-# 🎵 ytmp3-downloader (Minimal)
+# 🎵 ytmp3-downloader (Minimal Web App)
 
-Ein einfaches Python-Skript, das YouTube-Videos als MP3 herunterlädt und dir vor dem Download erlaubt, Titel und Interpret anzupassen.
-Es wird hierfür ein downloads ordner erstellt, wo die songs gespeichert werden.
+Ein einfaches Python-Webtool, das YouTube-Videos als MP3 herunterlädt und dir vor dem Download erlaubt, Titel und Interpret anzupassen.  
+Die Songs werden im Ordner `downloads` gespeichert und können direkt im Browser heruntergeladen werden.
 
 ---
 
-## 📋 Beispiel: Titel und Interpret vor dem Download anpassen
+## 🚀 Nutzung
 
-Das Skript liest zuerst die Video-Infos aus und zeigt dir den gefundenen Titel und Künstler an. Du kannst beide Eingaben anpassen oder einfach mit Enter übernehmen.
-Anschließend kann man ein weiteres Lied herunterladen oder alternativ beenden. Das Beenden startet ebenfalls den Metadaten-Schreiber, welcher basierend auf der
-Benennung der Datei (Interpret - Titel) diese Daten in die Metadaten einträgt.
+1. **Starte das Tool:**
+   ```bash
+   python yt2mp3.py
+   ```
+2. **Öffne deinen Browser und gehe zu**  
+   [http://127.0.0.1:5000](http://127.0.0.1:5000)
 
-### Tool starten:
+3. **Workflow im Browser:**
+   - Gib einen YouTube-Link ein.
+   - Klicke auf **Vorschlag holen**.
+   - Die Felder für Titel und Interpret erscheinen und werden automatisch ausgefüllt.
+   - Passe Titel und Interpret nach Wunsch an.
+   - Klicke auf **Download starten**.
+   - Nach Abschluss erscheint ein Download-Link zum MP3.
+
+---
+
+## 🗂 Ordnerstruktur
+
+- `public/` – Enthält die Weboberfläche (HTML, CSS, JS)
+- `downloads/` – Hier werden die MP3-Dateien gespeichert
+
+---
+
+## ⚙️ Voraussetzungen
+
+- Python 3.8+
+- [yt-dlp](https://github.com/yt-dlp/yt-dlp)
+- [mutagen](https://mutagen.readthedocs.io/en/latest/)
+- Flask
+
+Installiere die Abhängigkeiten mit:
 
 ```bash
-python yt2mp3.py
+pip install flask yt-dlp mutagen
 ```
 
-### Beispielausgabe im Terminal:
+---
 
-```bash
-🎥 YouTube-Link eingeben: https://www.youtube.com/watch?v=dQw4w9WgXcQ
+## 💡 Hinweise
 
-📋 Gefundene Informationen:
-Titel:   Rick Astley - Never Gonna Give You Up (Official Music Video)
-Interpret: Rick Astley
+- Die Metadaten (Titel & Interpret) werden automatisch gesetzt.
+- Die Weboberfläche ist minimal gehalten und funktioniert auch auf mobilen Geräten.
+- Die MP3-Dateien können direkt nach dem Download im Browser heruntergeladen werden.
 
-❓ Neuen Titel eingeben (Enter = Rick Astley - Never Gonna Give You Up (Official Music Video)): Never Gonna Give You Up
-❓ Neuen Interpreten eingeben (Enter = Rick Astley): Rick Astley
+---
 
-📥 Starte Download als: Rick Astley - Never Gonna Give You Up.mp3
+## 🖥️ Beispielablauf
 
-✅ Download abgeschlossen.
-
- Möchtest du noch ein Lied herunterladen? (j/n):
-```
+1. YouTube-Link eingeben und Vorschlag holen:
+2. Titel/Interpret anpassen (optional).
+3. Download starten und MP3 herunterladen.
