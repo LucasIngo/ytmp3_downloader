@@ -26,6 +26,16 @@ def download_mp3(data, DOWNLOAD_DIR):
     safe_artist = sanitize_filename(artist)
     filename = f"{safe_artist} - {safe_title}.mp3"
     output_path = os.path.join(DOWNLOAD_DIR, filename)
+    print("Saving to:", output_path)
+
+    # Check if directory exists and is writable
+    if not os.path.isdir(DOWNLOAD_DIR):
+        print(f"Download directory does not exist: {DOWNLOAD_DIR}")
+    elif not os.access(DOWNLOAD_DIR, os.W_OK):
+        print(f"No write permission for: {DOWNLOAD_DIR}")
+    else:
+        print(f"Write permission OK for: {DOWNLOAD_DIR}")
+
     ydl_opts = {
         "format": "bestaudio/best",
         "outtmpl": output_path.replace(".mp3", ".%(ext)s"),
@@ -45,8 +55,17 @@ def download_mp3(data, DOWNLOAD_DIR):
         #Remove or reset trachnumber
         if 'tracknumber' in audio:
             audio['tracknumber'] = ""
+        print(f"suggested output path: {output_path}")
+        print(f"suggested download_folder: {DOWNLOAD_DIR}")
         audio.save()
+        print(f"File saved at: {output_path}")
+        print(f"download_folder: {DOWNLOAD_DIR}")
+        if os.path.isfile(output_path):
+            print(f"File successfully saved: {output_path}")
+        else:
+            print(f"File NOT found after saving: {output_path}")
         return jsonify({"success": True, "filename": filename, "path": DOWNLOAD_DIR})
     except Exception as e:
+        print(f"Exception occurred: {e}")  # <-- Add this line
         logging.error(e)
         return jsonify({"success": False, "message": str(e)})
