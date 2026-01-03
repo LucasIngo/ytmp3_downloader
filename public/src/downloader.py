@@ -54,7 +54,7 @@ def normalize_youtube_url(url: str) -> str:
         ""
     ))
 
-def download_mp3(data, DOWNLOAD_DIR):
+def download_mp3(data, download_dir):
     url = data.get("url")
     url = normalize_youtube_url(url)
     title = data.get("title")
@@ -66,16 +66,16 @@ def download_mp3(data, DOWNLOAD_DIR):
     safe_title = sanitize_filename(title)
     safe_artist = sanitize_filename(artist)
     filename = f"{safe_artist} - {safe_title}.mp3"
-    output_path = os.path.join(DOWNLOAD_DIR, filename)
+    output_path = os.path.join(download_dir, filename)
     print("Saving to:", output_path)
 
     # Check if directory exists and is writable
-    if not os.path.isdir(DOWNLOAD_DIR):
-        print(f"Download directory does not exist: {DOWNLOAD_DIR}")
-    elif not os.access(DOWNLOAD_DIR, os.W_OK):
-        print(f"No write permission for: {DOWNLOAD_DIR}")
+    if not os.path.isdir(download_dir):
+        print(f"Download directory does not exist: {download_dir}")
+    elif not os.access(download_dir, os.W_OK):
+        print(f"No write permission for: {download_dir}")
     else:
-        print(f"Write permission OK for: {DOWNLOAD_DIR}")
+        print(f"Write permission OK for: {download_dir}")
 
     ydl_opts = {
         "format": "bestaudio/best",
@@ -97,17 +97,17 @@ def download_mp3(data, DOWNLOAD_DIR):
         if 'tracknumber' in audio:
             audio['tracknumber'] = ""
         print(f"suggested output path: {output_path}")
-        print(f"suggested download_folder: {DOWNLOAD_DIR}")
+        print(f"suggested download_folder: {download_dir}")
         audio.save()
         print(f"File saved at: {output_path}")
-        print(f"download_folder: {DOWNLOAD_DIR}")
+        print(f"download_folder: {download_dir}")
         
         if os.path.isfile(output_path):
             print(f"File successfully saved: {output_path}")
         else:
             print(f"File NOT found after saving: {output_path}")
         
-        return jsonify({"success": True, "filename": filename, "path": DOWNLOAD_DIR})
+        return jsonify({"success": True, "filename": filename, "path": download_dir})
     except Exception as e:
         print(f"Exception occurred: {e}")  # <-- Add this line
         logging.error(e)

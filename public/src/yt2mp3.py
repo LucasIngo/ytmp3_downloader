@@ -8,8 +8,8 @@ app = Flask(__name__, static_folder="../", static_url_path="")
 
 with open("config.yml", "r", encoding="utf-8") as f:
     config = yaml.safe_load(f)
-DOWNLOAD_DIR = config.get("download_dir", "downloads")
-os.makedirs(DOWNLOAD_DIR, exist_ok=True)
+download_dir = config.get("download_dir", "downloads")
+os.makedirs(download_dir, exist_ok=True)
 
 @app.route("/")
 def index():
@@ -24,11 +24,11 @@ def suggest():
 @app.route("/download", methods=["POST"])
 def download():
     data = request.json
-    return download_mp3(data, DOWNLOAD_DIR)
+    return download_mp3(data, download_dir)
 
 @app.route("/downloads/<path:filename>")
 def serve_file(filename):
-    return send_from_directory(DOWNLOAD_DIR, filename, as_attachment=True)
+    return send_from_directory(download_dir, filename, as_attachment=True)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)

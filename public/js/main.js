@@ -101,7 +101,6 @@ function resizeUrlInput(input) {
   tempSpan.textContent = input.value || input.placeholder;
   document.body.appendChild(tempSpan);
   let newWidth = tempSpan.offsetWidth + 30;
-  //document.body.removeChild(tempSpan);
   tempSpan.remove();
   if (newWidth < minWidth) newWidth = minWidth;
   if (newWidth > maxWidth) newWidth = maxWidth;
