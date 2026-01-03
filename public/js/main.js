@@ -97,7 +97,7 @@ function resizeUrlInput(input) {
   const tempSpan = document.createElement("span");
   tempSpan.style.visibility = "hidden";
   tempSpan.style.position = "fixed";
-  tempSpan.style.font = window.getComputedStyle(input).font;
+  tempSpan.style.font = globalThis.getComputedStyle(input).font;
   tempSpan.textContent = input.value || input.placeholder;
   document.body.appendChild(tempSpan);
   let newWidth = tempSpan.offsetWidth + 30;
@@ -108,7 +108,7 @@ function resizeUrlInput(input) {
 }
 
 // Set initial width on page load
-window.addEventListener("DOMContentLoaded", () => {
+globalThis.addEventListener("DOMContentLoaded", () => {
   const urlInput = document.getElementById("url");
   resizeUrlInput(urlInput);
 });
