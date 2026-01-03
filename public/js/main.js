@@ -3,6 +3,9 @@ const suggestBtn = document.getElementById("suggest");
 const downloadBtn = document.getElementById("download");
 const spinner = document.getElementById("spinner");
 const metaFields = document.getElementById("meta-fields");
+const playlistTable = document.getElementById("playlist-table");
+const playlistBody = playlistTable.querySelector("tbody");
+let playlistTracks = [];
 
 function showSpinner(show) {
   spinner.style.display = show ? "inline-block" : "none";
@@ -28,17 +31,34 @@ suggestBtn.addEventListener("click", async (e) => {
     if (!res.ok) throw new Error("Serverfehler");
     const data = await res.json();
     if (data.success) {
-      document.getElementById("title").value = data.title;
-      document.getElementById("artist").value = data.artist;
-      status.textContent =
-        "Vorschlag geladen. Du kannst Titel/Interpret ändern.";
+      playlistTracks = data.tracks;
+
+      // Einzelvideo
+      if (data.type === "single") {
+        document.getElementById("title").value = playlistTracks[0].title;
+        document.getElementById("artist").value = playlistTracks[0].artist;
+        metaFields.style.display = "block";
+        playlistTable.style.display = "none";
+      }
+
+      // Playlist
+      else {
+        playlistBody.innerHTML = "";
+        playlistTracks.forEach((track, i) => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+        <td>${i + 1}</td>
+        <td><input value="${track.title}"></td>
+        <td><input value="${track.artist}"></td>
+      `;
+          playlistBody.appendChild(row);
+        });
+
+        playlistTable.style.display = "table";
+        metaFields.style.display = "none";
+      }
+
       downloadBtn.disabled = false;
-      metaFields.style.display = "block";
-      status.style.color = "#2e7d32";
-    } else {
-      status.textContent = "Fehler: " + data.message;
-      metaFields.style.display = "none";
-      status.style.color = "#c62828";
     }
   } catch (err) {
     status.textContent = "Netzwerkfehler!";
@@ -51,43 +71,45 @@ suggestBtn.addEventListener("click", async (e) => {
 
 downloadBtn.addEventListener("click", async (e) => {
   e.preventDefault();
+
   downloadBtn.disabled = true;
   showSpinner(true);
   status.textContent = "Download läuft...";
   status.style.color = "#1565c0";
+
+  // Playlist
+  if (playlistTable.style.display === "table") {
+    const rows = playlistBody.querySelectorAll("tr");
+
+    rows.forEach((row, i) => {
+      playlistTracks[i].title = row.children[1].querySelector("input").value;
+      playlistTracks[i].artist = row.children[2].querySelector("input").value;
+    });
+
+    await fetch("/download-playlist", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tracks: playlistTracks }),
+    });
+    showSpinner(false);
+    status.textContent = "✅ Playlist Download abgeschlossen";
+    return;
+  }
+
+  // Einzelvideo
   const payload = {
     url: document.getElementById("url").value,
     title: document.getElementById("title").value,
     artist: document.getElementById("artist").value,
   };
-  try {
-    const res = await fetch("/download", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) throw new Error("Serverfehler");
-    const data = await res.json();
-    if (data.success) {
-      status.innerHTML = `✅ Download abgeschlossen: <a href="/downloads/${encodeURIComponent(
-        data.filename
-      )}" target="_blank">${data.filename}</a>`;
-      status.style.color = "#2e7d32";
-      document.getElementById("title").value = "";
-      document.getElementById("artist").value = "";
-      document.getElementById("url").value = "";
-      downloadBtn.disabled = true;
-      metaFields.style.display = "none";
-    } else {
-      status.textContent = "Fehler: " + data.message;
-      status.style.color = "#c62828";
-    }
-  } catch (err) {
-    status.textContent = "Netzwerkfehler!";
-    status.style.color = "#c62828";
-  }
+
+  await fetch("/download", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
   showSpinner(false);
-  downloadBtn.disabled = false;
+  status.textContent = "✅ Download abgeschlossen";
 });
 
 function resizeUrlInput(input) {

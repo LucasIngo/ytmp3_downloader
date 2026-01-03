@@ -7,31 +7,85 @@ from utils import sanitize_filename
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 import os, logging
 
+logger = logging.getLogger(__name__)
+
 def get_suggestion(url):
     if not url:
         return jsonify({"success": False, "message": "Kein YouTube-Link angegeben"})
     
     url = normalize_youtube_url(url)
-
+    logger.debug("Hole Vorschlag für URL")
     ydl_opts = {
         "quiet": True, 
         "skip_download": True, 
-        "noplaylist": True
+        "extract_flat": "in_playlist",
+        "no warnings": True
     }
     
     with YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=False)
-        title = info.get("title", "Unbekannter Titel")
-        artist = info.get("uploader", "Unbekannter Künstler")
-    
+
+    # Playlist
+    if "entries" in info:
+        tracks = []
+        logger.info("Playlist erkannt (%d Einträge)", len(info["entries"]))
+        for entry in info["entries"]:
+            if not entry:
+                continue
+            tracks.append({
+                "title": entry.get("title", "Unbekannter Titel"),
+                "artist": entry.get("uploader", "Unbekannter Künstler"),
+                "url": entry.get("url")
+            })
+
+        return jsonify({
+            "success": True,
+            "type": "playlist",
+            "tracks": tracks,
+            "normalized_url": url
+        })
+
+    logger.info("Einzelvideo erkannt")
+    # Einzelvideo
     return jsonify({
-        "success": True, 
-        "title": title, 
-        "artist": artist,
+        "success": True,
+        "type": "single",
+        "tracks": [{
+            "title": info.get("title", "Unbekannter Titel"),
+            "artist": info.get("uploader", "Unbekannter Künstler"),
+            "url": url
+        }],
         "normalized_url": url
     })
 
 def normalize_youtube_url(url: str) -> str:
+    parsed = urlparse(url)
+
+    netloc = parsed.netloc
+    if netloc == "music.youtube.com":
+        netloc = "www.youtube.com"
+
+    qs = parse_qs(parsed.query)
+
+    clean_qs = {}
+
+    # Video
+    if "v" in qs:
+        clean_qs["v"] = qs["v"]
+
+    # Playlist (WICHTIG!)
+    if "list" in qs:
+        clean_qs["list"] = qs["list"]
+
+    return urlunparse((
+        parsed.scheme or "https",
+        netloc,
+        parsed.path,
+        parsed.params,
+        urlencode(clean_qs, doseq=True),
+        ""
+    ))
+
     parsed = urlparse(url)
 
     # music.youtube.com → www.youtube.com
@@ -67,15 +121,16 @@ def download_mp3(data, download_dir):
     safe_artist = sanitize_filename(artist)
     filename = f"{safe_artist} - {safe_title}.mp3"
     output_path = os.path.join(download_dir, filename)
-    print("Saving to:", output_path)
+    
+    logger.info("Starte download")
 
     # Check if directory exists and is writable
     if not os.path.isdir(download_dir):
-        print(f"Download directory does not exist: {download_dir}")
+        logger.error("Download directory does not exist: %s", download_dir)
     elif not os.access(download_dir, os.W_OK):
-        print(f"No write permission for: {download_dir}")
+        logger.error("No write permission for: %s", download_dir)
     else:
-        print(f"Write permission OK for: {download_dir}")
+        logger.error("Write permission OK for: %s", download_dir)
 
     ydl_opts = {
         "format": "bestaudio/best",
@@ -86,6 +141,7 @@ def download_mp3(data, download_dir):
         ],
         "noplaylist": True,
         "quiet": True,
+        "logger": logging.getLogger("yt_dlp"),
     }
     try:
         with YoutubeDL(ydl_opts) as ydl:
@@ -96,19 +152,27 @@ def download_mp3(data, download_dir):
         #Remove or reset trachnumber
         if 'tracknumber' in audio:
             audio['tracknumber'] = ""
-        print(f"suggested output path: {output_path}")
-        print(f"suggested download_folder: {download_dir}")
+       
         audio.save()
-        print(f"File saved at: {output_path}")
-        print(f"download_folder: {download_dir}")
         
         if os.path.isfile(output_path):
-            print(f"File successfully saved: {output_path}")
+            logger.info("File successfully saved: %s", filename)
         else:
-            print(f"File NOT found after saving: {output_path}")
+            logger.info("File NOT found after saving: %s", output_path)
         
         return jsonify({"success": True, "filename": filename, "path": download_dir})
-    except Exception as e:
-        print(f"Exception occurred: {e}")  # <-- Add this line
-        logging.error(e)
-        return jsonify({"success": False, "message": str(e)})
+    except Exception as e:# <-- Add this line
+        logging.exception("Fehler beim Download")
+        return jsonify({"success": False, "message": "Download fehlgeschlagen"})
+    
+def download_playlist(tracks, download_dir):
+    results = []
+
+    for track in tracks:
+        res = download_mp3(track, download_dir)
+        results.append(res.json)
+
+    return jsonify({
+        "success": True,
+        "results": results
+    })
