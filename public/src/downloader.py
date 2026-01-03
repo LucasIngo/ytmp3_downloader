@@ -4,24 +4,65 @@ from mutagen.easyid3 import EasyID3
 from mutagen.mp3 import MP3
 from flask import jsonify
 from utils import sanitize_filename
+from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 import os, logging
 
 def get_suggestion(url):
     if not url:
         return jsonify({"success": False, "message": "Kein YouTube-Link angegeben"})
-    ydl_opts = {"quiet": True, "skip_download": True, "noplaylist": True}
+    
+    url = normalize_youtube_url(url)
+
+    ydl_opts = {
+        "quiet": True, 
+        "skip_download": True, 
+        "noplaylist": True
+    }
+    
     with YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=False)
         title = info.get("title", "Unbekannter Titel")
         artist = info.get("uploader", "Unbekannter Künstler")
-    return jsonify({"success": True, "title": title, "artist": artist})
+    
+    return jsonify({
+        "success": True, 
+        "title": title, 
+        "artist": artist,
+        "normalized_url": url
+    })
+
+def normalize_youtube_url(url: str) -> str:
+    parsed = urlparse(url)
+
+    # music.youtube.com → www.youtube.com
+    netloc = parsed.netloc
+    if netloc == "music.youtube.com":
+        netloc = "www.youtube.com"
+
+    # Query-Parameter filtern (nur v behalten)
+    qs = parse_qs(parsed.query)
+    clean_qs = {}
+    if "v" in qs:
+        clean_qs["v"] = qs["v"]
+
+    return urlunparse((
+        parsed.scheme or "https",
+        netloc,
+        parsed.path,
+        parsed.params,
+        urlencode(clean_qs, doseq=True),
+        ""
+    ))
 
 def download_mp3(data, DOWNLOAD_DIR):
     url = data.get("url")
+    url = normalize_youtube_url(url)
     title = data.get("title")
     artist = data.get("artist")
+    
     if not url or not title or not artist:
         return jsonify({"success": False, "message": "Fehlende Daten"})
+    
     safe_title = sanitize_filename(title)
     safe_artist = sanitize_filename(artist)
     filename = f"{safe_artist} - {safe_title}.mp3"
@@ -60,10 +101,12 @@ def download_mp3(data, DOWNLOAD_DIR):
         audio.save()
         print(f"File saved at: {output_path}")
         print(f"download_folder: {DOWNLOAD_DIR}")
+        
         if os.path.isfile(output_path):
             print(f"File successfully saved: {output_path}")
         else:
             print(f"File NOT found after saving: {output_path}")
+        
         return jsonify({"success": True, "filename": filename, "path": DOWNLOAD_DIR})
     except Exception as e:
         print(f"Exception occurred: {e}")  # <-- Add this line

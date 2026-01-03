@@ -14,13 +14,11 @@ suggestBtn.addEventListener("click", async (e) => {
   showSpinner(true);
   status.textContent = "Hole Vorschlag...";
   const url = document.getElementById("url").value;
-  if (!url.match(/^https?:\/\/(www\.)?(youtube\.com|youtu\.be)\/.+/)) {
-    status.textContent = "Bitte gib einen gültigen YouTube-Link ein.";
-    suggestBtn.disabled = false;
-    showSpinner(false);
-    metaFields.style.display = "none";
+  if (!url.startsWith("http")) {
+    status.textContent = "Bitte gib eine gültige URL ein.";
     return;
   }
+
   try {
     const res = await fetch("/suggest", {
       method: "POST",
